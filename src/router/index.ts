@@ -6,7 +6,12 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
-      component: () => import('../views/Map.vue')
+      component: () => import('../views/MapOnline.vue')
+    },
+    {
+      path: '/offline',
+      name: 'mapOffline',
+      component: () => import('../views/MapOffline.vue')
     }
   ]
 })

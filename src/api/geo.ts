@@ -5,3 +5,9 @@ export function getGeoJSON(filename: string) {
         url: `/geo/areas_v3/bound/${filename}`
     })
 }
+
+export function getGeoJSONLocal(filename: string) {
+    return get({
+        url: `/data/geo/${filename}`
+    })
+}

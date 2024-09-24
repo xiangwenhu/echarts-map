@@ -27,7 +27,7 @@ import * as echarts from "echarts";
 import { ADCODE_CHINA } from "@/const";
 import { getGeoJSON } from "@/api/geo";
 import { nextTick } from "vue";
-import ProvinceCityTown from "@/components/provinceCityTown.vue";
+import ProvinceCityTown from "@/components/PCAOnline.vue";
 
 const adCodeMap: Record<string, AreaInfoItem> = {
   [ADCODE_CHINA]: {
@@ -210,7 +210,7 @@ async function viewChinaMap(areaInfo: AreaInfoItem) {
           },
         ],
         symbolSize: 20,
-        symbol: "image://http://localhost:3001/src/assets/images/park.jpg", // 这里填写你想要展示的图片的URL
+        symbol: "image://http://localhost:3001/images/park.jpg", // 这里填写你想要展示的图片的URL
         symbolRotate: 0,
       },
     ],
@@ -265,7 +265,7 @@ async function onViewDistrict(config: AreaInfoItem) {
           },
         ],
         symbolSize: 20,
-        symbol: "image://http://localhost:3001/src/assets/images/park.jpg", // 这里填写你想要展示的图片的URL
+        symbol: "image://http://localhost:3001/images/park.jpg", // 这里填写你想要展示的图片的URL
         symbolRotate: 0,
       },
     ],
@@ -296,8 +296,6 @@ function onCodeChange(areaInfo: AreaInfoItem) {
     return viewChinaMap(adCodeMap[ADCODE_CHINA]);
   }
   console.log(pct.value);
-  // @ts-ignore
-  areaInfo.adcode = areaInfo.code;
   onViewMap(areaInfo);
 }
 </script>
