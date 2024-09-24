@@ -8,8 +8,10 @@
         v-model="pct"
         style="width: 300px"
       ></province-city-town>
-      <button @click="onBack()">返回</button>
-      <button @click="onBackHome()">返回地图首页</button>
+      <el-button @click="onBack()">返回地图上一级</el-button>
+      <el-button @click="onBackHome()">返回地图首页</el-button>
+      <router-link to="/">返回网站首页</router-link>
+      <el-button @click="reload">页面刷新</el-button>
     </el-space>
   </div>
 
@@ -55,9 +57,9 @@ function onBack() {
   onViewMap(adcode);
 }
 
-function onBackHome(){
-    mapStacks.length = 0;
-    viewChinaMap(adCodeMap[ADCODE_CHINA]);
+function onBackHome() {
+  mapStacks.length = 0;
+  viewChinaMap(adCodeMap[ADCODE_CHINA]);
 }
 
 function pushStack(adcode: number) {
@@ -297,6 +299,10 @@ function onCodeChange(areaInfo: AreaInfoItem) {
   }
   console.log(pct.value);
   onViewMap(areaInfo);
+}
+
+function reload(){
+  location.reload();
 }
 </script>
 
