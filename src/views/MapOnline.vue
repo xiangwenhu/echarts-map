@@ -30,6 +30,8 @@ import { ADCODE_CHINA } from "@/const";
 import { getGeoJSON } from "@/api/geo";
 import { nextTick } from "vue";
 import ProvinceCityTown from "@/components/PCAOnline.vue";
+import { onBeforeMount } from "vue";
+import { onBeforeUnmount } from "vue";
 
 const adCodeMap: Record<string, AreaInfoItem> = {
   [ADCODE_CHINA]: {
@@ -77,7 +79,7 @@ function onViewMap(areaInfo: number | AreaInfoItem) {
 
 // https://lbs.amap.com/api/javascript-api-v2/guide/services/district-search
 const refDom = ref<HTMLDivElement>();
-const chartInstance = ref<echarts.ECharts>();
+const refChartIns = ref<echarts.ECharts>();
 
 function initEcharts(
   map: string | number,
@@ -89,10 +91,10 @@ function initEcharts(
   let option: echarts.EChartsOption = {
     geo: {
       map: `${map}`,
-      roam: false,
+      roam: true,
       scaleLimit: {
         min: 1.2,
-        max: 3,
+        max: 5,
       },
       zoom: 1.2,
       //图形上的文本标签，可用于说明图形的一些数据信息
@@ -155,8 +157,8 @@ function initEcharts(
     },
   };
 
-  chartInstance.value!.clear();
-  chartInstance.value!.setOption(option);
+  // chartInstance.value!.clear();
+  refChartIns.value!.setOption(option, true);
 }
 
 function getFilename({ adcode, name, level, childrenNum }: AreaInfoItem) {
@@ -175,19 +177,18 @@ async function ensureGeoJSON(areaInfo: AreaInfoItem) {
   } else {
     const fName = getFilename(areaInfo);
     geoJSON = await getGeoJSON(fName);
+    // geoJSON.features = geoJSON.features.filter((f) => f.properties.name);
     echarts.registerMap(`${adcode}`, geoJSON as any);
-
-    geoJSON.features.forEach((p) => {
-      adCodeMap[p.properties.adcode] = {
-        adcode: p.properties.adcode,
-        name: p.properties.name,
-        level: p.properties.level,
-        childrenNum: p.properties.childrenNum,
-      };
-    });
-
-    return geoJSON;
   }
+
+  geoJSON.features.forEach((p) => {
+    adCodeMap[p.properties.adcode] = {
+      adcode: p.properties.adcode,
+      name: p.properties.name,
+      level: p.properties.level,
+      childrenNum: p.properties.childrenNum,
+    };
+  });
 
   return geoJSON;
 }
@@ -276,20 +277,41 @@ async function onViewDistrict(config: AreaInfoItem) {
   initEcharts(adcode, options as any);
 }
 
+function onResize() {
+  if (refChartIns.value) {
+    const options = refChartIns.value.getOption();
+    refChartIns.value.resize();
+    refChartIns.value.setOption(options, true);
+  }
+}
+
 onMounted(() => {
   nextTick(() => {
-    chartInstance.value = echarts.init(refDom.value);
-    chartInstance.value.on("click", function (params: echarts.ECElementEvent) {
-      if (params.componentType === "series") {
+    refChartIns.value = echarts.init(refDom.value);
+    refChartIns.value.on(
+      "click",
+      "series",
+      function (params: echarts.ECElementEvent) {
+        if (params.componentSubType !== "map") return;
+
         const value = params.value as number;
         if (value in adCodeMap) {
           if (value == mapStacks[mapStacks.length - 1]) return;
           onViewMap(value);
         }
       }
-    });
+    );
     viewChinaMap(adCodeMap[ADCODE_CHINA]);
   });
+  window.addEventListener("resize", onResize);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("resize", onResize);
+
+  if (refChartIns.value && !refChartIns.value.isDisposed()) {
+    refChartIns.value?.dispose();
+  }
 });
 
 const pct = ref<AreaInfoItem>();
@@ -301,7 +323,7 @@ function onCodeChange(areaInfo: AreaInfoItem) {
   onViewMap(areaInfo);
 }
 
-function reload(){
+function reload() {
   location.reload();
 }
 </script>
