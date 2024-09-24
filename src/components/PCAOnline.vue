@@ -40,6 +40,7 @@ const cityProps = {
   checkStrictly: true,
   lazy: true,
   lazyLoad,
+  // emitPath: false,
 };
 
 function getFilename({ adcode, name, level, childrenNum }: AreaInfoItem) {
@@ -72,13 +73,8 @@ async function getGeoJSONData(areaInfo: AreaInfoItem) {
 const refCascader = ref<CascaderInstance>();
 
 function onChange(value: CascaderValue) {
-  const node = refCascader.value?.getCheckedNodes(false);
-  if (!node || (Array.isArray(node) && node.length == 0))
-    emits("nodeChange", undefined);
-
-  // @ts-ignore
-  const data = node[node.length - 1].data;
-  emits("nodeChange", data);
+  const nodes = refCascader.value?.getCheckedNodes(false) || [];
+  emits("nodeChange", nodes.map(n => n.data));
 }
 
 onMounted(() => {

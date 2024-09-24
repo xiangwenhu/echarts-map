@@ -49,7 +49,7 @@ const levelHanlderMap = {
   district: onViewDistrict,
 };
 
-const mapStacks: number[] = [];
+const mapStacks: AreaInfoItem[] = [];
 
 function onBack() {
   if (mapStacks.length === 1) return;
@@ -64,17 +64,22 @@ function onBackHome() {
   viewChinaMap(adCodeMap[ADCODE_CHINA]);
 }
 
-function pushStack(adcode: number) {
-  if (adcode === mapStacks[mapStacks.length - 1]) return;
-  mapStacks.push(adcode);
+function pushStack(areaInfoInfo: AreaInfoItem) {
+  if (
+    mapStacks.length > 0 &&
+    areaInfoInfo.adcode === mapStacks[mapStacks.length - 1].adcode
+  )
+    return;
+  mapStacks.push(areaInfoInfo);
 }
 
-function onViewMap(areaInfo: number | AreaInfoItem) {
+async function onViewMap(areaInfo: number | AreaInfoItem) {
   const info: AreaInfoItem =
     typeof areaInfo == "number" ? adCodeMap[areaInfo] : areaInfo;
   const handler = levelHanlderMap[info.level];
   console.log("onViewMap:", info);
-  handler(info);
+  await handler(info);
+  console.log("stacks:", mapStacks);
 }
 
 // https://lbs.amap.com/api/javascript-api-v2/guide/services/district-search
@@ -218,39 +223,39 @@ async function viewChinaMap(areaInfo: AreaInfoItem) {
       },
     ],
   };
-  pushStack(adcode);
+  pushStack(areaInfo);
   initEcharts(adcode, options);
 }
 
-async function onViewProvince(config: AreaInfoItem) {
-  const { adcode, level, childrenNum } = config;
-  const geoJSON: GeoJSON = await ensureGeoJSON(config);
+async function onViewProvince(areaInfo: AreaInfoItem) {
+  const { adcode, level, childrenNum } = areaInfo;
+  const geoJSON: GeoJSON = await ensureGeoJSON(areaInfo);
   const options = {
     data: geoJSON.features.map((f) => ({
       name: f.properties.name,
       value: f.properties.adcode,
     })),
   };
-  pushStack(adcode);
+  pushStack(areaInfo);
   initEcharts(adcode, options);
 }
 
-async function onViewCity(config: AreaInfoItem) {
-  const { adcode, level, childrenNum } = config;
-  const geoJSON = await ensureGeoJSON(config);
+async function onViewCity(areaInfo: AreaInfoItem) {
+  const { adcode, level, childrenNum } = areaInfo;
+  const geoJSON = await ensureGeoJSON(areaInfo);
   const options = {
     data: geoJSON.features.map((f) => ({
       name: f.properties.name,
       value: f.properties.adcode,
     })),
   };
-  pushStack(adcode);
+  pushStack(areaInfo);
   initEcharts(adcode, options);
 }
 
-async function onViewDistrict(config: AreaInfoItem) {
-  const { adcode, level, childrenNum } = config;
-  const geoJSON: GeoJSON = await ensureGeoJSON(config);
+async function onViewDistrict(areaInfo: AreaInfoItem) {
+  const { adcode, level, childrenNum } = areaInfo;
+  const geoJSON: GeoJSON = await ensureGeoJSON(areaInfo);
   const options = {
     data: geoJSON.features.map((f) => ({
       name: f.properties.name,
@@ -273,7 +278,7 @@ async function onViewDistrict(config: AreaInfoItem) {
       },
     ],
   };
-  pushStack(adcode);
+  pushStack(areaInfo);
   initEcharts(adcode, options as any);
 }
 
@@ -296,7 +301,11 @@ onMounted(() => {
 
         const value = params.value as number;
         if (value in adCodeMap) {
-          if (value == mapStacks[mapStacks.length - 1]) return;
+          if (
+            mapStacks.length > 0 &&
+            value == mapStacks[mapStacks.length - 1].adcode
+          )
+            return;
           onViewMap(value);
         }
       }
@@ -315,12 +324,12 @@ onBeforeUnmount(() => {
 });
 
 const pct = ref<AreaInfoItem>();
-function onCodeChange(areaInfo: AreaInfoItem) {
-  if (!areaInfo) {
+function onCodeChange(areaInfos: AreaInfoItem[]) {
+  if (!areaInfos  || areaInfos.length == 0) {
     return viewChinaMap(adCodeMap[ADCODE_CHINA]);
   }
   console.log(pct.value);
-  onViewMap(areaInfo);
+  onViewMap(areaInfos[0]);
 }
 
 function reload() {
