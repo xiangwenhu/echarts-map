@@ -3,7 +3,7 @@
     ref="refCascader"
     filterable
     :props="cityProps"
-    :options="cityData.children"
+    :options="pcaData"
     placeholder="请选择省市区"
     @change="onChange"
   ></el-cascader>
@@ -11,13 +11,15 @@
 
 
 <script setup lang="ts">
-import cityData from "@/assets/data/pca-code.json";
+import { get } from "@/api/request";
 import {
   type CascaderInstance,
   ElCalendar,
   type CascaderValue,
 } from "element-plus";
-import { ref } from "vue";
+import { onMounted, ref } from "vue";
+
+const pcaData = ref<any[]>();
 
 const emits = defineEmits(["nodeChange"]);
 
@@ -40,4 +42,13 @@ function onChange(value: CascaderValue) {
   const data = node[node.length - 1].data;
   emits("nodeChange", data);
 }
+
+async function getPCAData() {
+  const res = await get({ url: "/data/pca/pca-code.json" });
+  pcaData.value = res.children;
+}
+
+onMounted(() => {
+  getPCAData();
+});
 </script>

@@ -1,10 +1,10 @@
 import axios from "axios";
 import * as fs from "fs";
-import { AreaInfoItem, GeoJSON } from "./dataPca.type";
+import { type AreaInfoItem, type GeoJSON } from "./type";
 import * as path from "path";
 
 const ADCODE_CHINA = 100000;
-const DIST = path.join(__dirname, "../data/pca");
+const DIST = path.join(__dirname, "../public/data/pca");
 
 const root: AreaInfoItem = {
     code: ADCODE_CHINA,
