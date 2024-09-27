@@ -24,7 +24,7 @@ const pcaData = ref<any[]>();
 const emits = defineEmits(["nodeChange"]);
 
 const cityProps = {
-  value: "code",
+  value: "adcode",
   label: "name",
   children: "children",
   checkStrictly: true,
