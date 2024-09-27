@@ -2,6 +2,7 @@ import axios from "axios";
 import * as fs from "fs";
 import { type AreaInfoItem, type GeoJSON } from "./type";
 import * as path from "path";
+import { delay } from "./util";
 
 const ADCODE_CHINA = 100000;
 const DIST = path.join(__dirname, "../public/data/pca");
@@ -57,6 +58,7 @@ async function getAreaData(areaInfo: AreaInfoItem) {
         const aInfo = areaInfo.children[i];
         if (aInfo.childrenNum == 0) continue;
         console.log(`${areaInfo.name} => ${aInfo.name}`);
+        await delay(50);
         await getAreaData(aInfo)
     }
     return areaInfo;
