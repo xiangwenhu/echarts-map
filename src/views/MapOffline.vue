@@ -30,6 +30,8 @@ import { ADCODE_CHINA } from "@/const";
 import { getGeoJSONLocal as getGeoJSON } from "@/api/geo";
 import { nextTick } from "vue";
 import ProvinceCityTown from "@/components/PCAOffline.vue";
+import {  random } from "lodash";
+import { getEchartOptions, getGeoJSONData } from "@/util/map";
 
 const adCodeMap: Record<string, AreaInfoItem> = {
   [ADCODE_CHINA]: {
@@ -40,14 +42,7 @@ const adCodeMap: Record<string, AreaInfoItem> = {
   },
 };
 
-const levelHanlderMap = {
-  country: viewChinaMap,
-  province: onViewProvince,
-  city: onViewCity,
-  district: onViewDistrict,
-};
-
-const mapStacks: number[] = [];
+const mapStacks: AreaInfoItem[] = [];
 
 function onBack() {
   if (mapStacks.length === 1) return;
@@ -59,122 +54,98 @@ function onBack() {
 
 function onBackHome() {
   mapStacks.length = 0;
-  viewChinaMap(adCodeMap[ADCODE_CHINA]);
+  onViewMap(adCodeMap[ADCODE_CHINA]);
 }
 
-function pushStack(adcode: number) {
-  if (adcode === mapStacks[mapStacks.length - 1]) return;
-  mapStacks.push(adcode);
+function pushStack(areaInfoInfo: AreaInfoItem) {
+  if (
+    mapStacks.length > 0 &&
+    areaInfoInfo.adcode === mapStacks[mapStacks.length - 1].adcode
+  )
+    return;
+  mapStacks.push(areaInfoInfo);
 }
 
-function onViewMap(areaInfo: number | AreaInfoItem) {
+async function onViewMap(areaInfo: number | AreaInfoItem) {
   const info: AreaInfoItem =
     typeof areaInfo == "number" ? adCodeMap[areaInfo] : areaInfo;
-  const handler = levelHanlderMap[info.level];
   console.log("onViewMap:", info);
-  handler(info);
+  await onViewMapArea(info);
+  console.log("stacks:", mapStacks);
 }
 
+/**
+ * 核心的业务逻辑在此处理，
+ * 1. 每个区域的值
+ * 2. 每个区域的 scatter 散点图
+ * @param areaInfo
+ */
+async function onViewMapArea(areaInfo: AreaInfoItem) {
+  refChartIns.value?.showLoading();
+  const { adcode, level, childrenNum } = areaInfo;
+  const geoJSON: GeoJSON = await ensureGeoJSON(areaInfo);
+
+  let otherSeries: echarts.SeriesOption[] = [];
+  // 按需添加 scatter
+  if (areaInfo.level === "country") {
+    otherSeries = [
+      {
+        tooltip: {
+          formatter(params, ticket) {
+            // @ts-ignore
+            return `${params.name} <br/> 空位: ${params.value[2]}`;
+          },
+        },
+        name: "停车场",
+        type: "scatter",
+        coordinateSystem: "geo",
+        data: [
+          {
+            name: "停车场1",
+            value: [88.718619, 38.138863, 100],
+          },
+        ],
+        symbolSize: 20,
+        symbol: "image://http://localhost:3001/images/park.jpg", // 这里填写你想要展示的图片的URL
+        symbolRotate: 0,
+      },
+    ];
+  }
+
+  // ** 业务数据，转为 地图的 options
+  const options: echarts.EChartsOption = {
+    series: [
+      {
+        data: geoJSON.features.map((f) => ({
+          name: f.properties.name,
+          value: random(0, 10000),
+          adcode: f.properties.adcode,
+        })),
+      },
+      ...otherSeries,
+    ],
+  };
+
+  pushStack(areaInfo);
+  refChartIns.value?.hideLoading();
+
+  initEcharts(adcode, options);
+}
+
+// https://lbs.amap.com/api/javascript-api-v2/guide/services/district-search
 const refDom = ref<HTMLDivElement>();
 const refChartIns = ref<echarts.ECharts>();
 
-function initEcharts(
-  map: string | number,
-  options: {
-    data: { name: string; value: string | number }[];
-    series?: echarts.SeriesOption[];
-  }
-) {
-  let option: echarts.EChartsOption = {
-    geo: {
-      map: `${map}`,
-      roam: true,
-      scaleLimit: {
-        min: 1.2,
-        max: 5,
-      },
-      zoom: 1.2,
-      //图形上的文本标签，可用于说明图形的一些数据信息
-      label: {
-        normal: {
-          show: true,
-          fontSize: 14,
-          color: "rgba(0,0,0)",
-          fontFamily: "Arial",
-        },
-      },
-      //地图区域的多边形 图形样式，有 normal 和 emphasis 两个状态
-      itemStyle: {
-        //normal 是图形在默认状态下的样式；
-        normal: {
-          borderColor: "rgba(0, 0, 0, 0.2)",
-        },
-        //emphasis 是图形在高亮状态下的样式，比如在鼠标悬浮或者图例联动高亮时。
-        emphasis: {
-          areaColor: "#F3B329",
-          shadowOffsetX: 0,
-          shadowOffsetY: 0,
-          shadowBlur: 20,
-          borderWidth: 0,
-          shadowColor: "rgba(0, 0, 0, 0.5)",
-        },
-      },
-    },
-    series: [
-      {
-        type: "map",
-        mapType: `${map}`,
-        geoIndex: 0,
-        data: options.data,
-      },
-      ...(options.series || []),
-    ],
-    visualMap: {
-      show: false,
-      left: "right",
-      min: 100000,
-      max: 700000,
-      inRange: {
-        color: [
-          "#FCDAD5",
-          "#FDE2CA",
-          "#FEEBD0",
-          "#FFFAB3",
-          "#C8E2B1",
-          "#C9E4D6",
-          "#CAE5E8",
-          "#BFCAE6",
-          "#A095C4",
-          "#C9B5D4",
-          "#ECECEC",
-        ],
-      },
-      text: ["High", "Low"],
-      calculable: true,
-    },
-  };
+function initEcharts(map: string | number, options: echarts.EChartsOption) {
 
-  refChartIns.value!.clear();
-  refChartIns.value!.setOption(option);
+  const mOptions = getEchartOptions(map, options);
+  // chartInstance.value!.clear();
+  refChartIns.value!.setOption(mOptions, true);
 }
 
-function getFilename({ adcode, name, level, childrenNum }: AreaInfoItem) {
-  return `${adcode}.json`;
-}
 
 async function ensureGeoJSON(areaInfo: AreaInfoItem) {
-  const { adcode, level, childrenNum } = areaInfo;
-  const mapData = echarts.getMap(`${adcode}`);
-
-  let geoJSON: GeoJSON;
-  if (mapData) {
-    geoJSON = mapData.geoJSON;
-  } else {
-    const fName = getFilename(areaInfo);
-    geoJSON = await getGeoJSON(fName);
-    echarts.registerMap(`${adcode}`, geoJSON as any);
-  }
-
+  const geoJSON = await getGeoJSONData(areaInfo, true)
   geoJSON.features.forEach((p) => {
     adCodeMap[p.properties.adcode] = {
       adcode: p.properties.adcode,
@@ -185,90 +156,6 @@ async function ensureGeoJSON(areaInfo: AreaInfoItem) {
   });
 
   return geoJSON;
-}
-
-async function viewChinaMap(areaInfo: AreaInfoItem) {
-  const { adcode, level, childrenNum } = areaInfo;
-  const geoJSON: GeoJSON = await ensureGeoJSON(areaInfo);
-  const options = {
-    data: geoJSON.features.map((f) => ({
-      name: f.properties.name,
-      value: f.properties.adcode,
-    })),
-    series: [
-      {
-        name: "Scatter",
-        type: "scatter",
-        coordinateSystem: "geo",
-        data: [
-          {
-            name: "",
-            value: [88.718619, 38.138863], // 这里填写具体的经纬度和图片URL
-          },
-        ],
-        symbolSize: 20,
-        symbol: "image://http://localhost:3001/images/park.jpg", // 这里填写你想要展示的图片的URL
-        symbolRotate: 0,
-      },
-    ],
-  };
-  pushStack(adcode);
-  initEcharts(adcode, options);
-}
-
-async function onViewProvince(config: AreaInfoItem) {
-  const { adcode, level, childrenNum } = config;
-  const geoJSON: GeoJSON = await ensureGeoJSON(config);
-  const options = {
-    data: geoJSON.features.map((f) => ({
-      name: f.properties.name,
-      value: f.properties.adcode,
-    })),
-  };
-  pushStack(adcode);
-  initEcharts(adcode, options);
-}
-
-async function onViewCity(config: AreaInfoItem) {
-  const { adcode, level, childrenNum } = config;
-  const geoJSON = await ensureGeoJSON(config);
-  const options = {
-    data: geoJSON.features.map((f) => ({
-      name: f.properties.name,
-      value: f.properties.adcode,
-    })),
-  };
-  pushStack(adcode);
-  initEcharts(adcode, options);
-}
-
-async function onViewDistrict(config: AreaInfoItem) {
-  const { adcode, level, childrenNum } = config;
-  const geoJSON: GeoJSON = await ensureGeoJSON(config);
-  const options = {
-    data: geoJSON.features.map((f) => ({
-      name: f.properties.name,
-      value: f.properties.adcode,
-    })),
-    series: [
-      {
-        name: "Scatter",
-        type: "scatter",
-        coordinateSystem: "geo",
-        data: [
-          {
-            name: "",
-            value: [88.718619, 38.138863], // 这里填写具体的经纬度和图片URL
-          },
-        ],
-        symbolSize: 20,
-        symbol: "image://http://localhost:3001/images/park.jpg", // 这里填写你想要展示的图片的URL
-        symbolRotate: 0,
-      },
-    ],
-  };
-  pushStack(adcode);
-  initEcharts(adcode, options as any);
 }
 
 function onResize() {
@@ -286,14 +173,20 @@ onMounted(() => {
       "click",
       "series",
       function (params: echarts.ECElementEvent) {
-        const value = params.value as number;
+        if (params.componentSubType !== "map") return;
+        // @ts-ignore
+        const value = params.data?.adcode as number;
         if (value in adCodeMap) {
-          if (value == mapStacks[mapStacks.length - 1]) return;
+          if (
+            mapStacks.length > 0 &&
+            value == mapStacks[mapStacks.length - 1].adcode
+          )
+            return;
           onViewMap(value);
         }
       }
     );
-    viewChinaMap(adCodeMap[ADCODE_CHINA]);
+    onViewMap(adCodeMap[ADCODE_CHINA]);
   });
   window.addEventListener("resize", onResize);
 });
@@ -307,14 +200,12 @@ onBeforeUnmount(() => {
 });
 
 const pct = ref<AreaInfoItem>();
-function onCodeChange(areaInfo: AreaInfoItem) {
-  if (!areaInfo) {
-    return viewChinaMap(adCodeMap[ADCODE_CHINA]);
+function onCodeChange(areaInfos: AreaInfoItem[]) {
+  if (!areaInfos || areaInfos.length == 0) {
+    return onViewMap(adCodeMap[ADCODE_CHINA]);
   }
   console.log(pct.value);
-  // @ts-ignore
-  areaInfo.adcode = areaInfo.code;
-  onViewMap(areaInfo);
+  onViewMap(areaInfos[0]);
 }
 
 function reload() {

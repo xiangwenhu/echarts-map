@@ -7,16 +7,16 @@ const ADCODE_CHINA = 100000;
 const DIST = path.join(__dirname, "../public/data/pca");
 
 const root: AreaInfoItem = {
-    code: ADCODE_CHINA,
+    adcode: ADCODE_CHINA,
     name: '中国',
     level: 'country',
     childrenNum: 34,
 }
 
-function getFilename({ code, name, level, childrenNum }: AreaInfoItem) {
-    if (code === ADCODE_CHINA) return `${code}_full.json`;
-    if (childrenNum == 0) return `${code}.json`;
-    return level == "district" ? `${code}.json` : `${code}_full.json`;
+function getFilename({ adcode, name, level, childrenNum }: AreaInfoItem) {
+    if (adcode === ADCODE_CHINA) return `${adcode}_full.json`;
+    if (childrenNum == 0) return `${adcode}.json`;
+    return level == "district" ? `${adcode}.json` : `${adcode}_full.json`;
 }
 
 async function getGeoJSON(areaInfo: AreaInfoItem) {
@@ -36,7 +36,7 @@ function saveFile(data: Record<string, any>, filename: string) {
 function geoJSONToAreaInfo(geoJSON: GeoJSON) {
     if (!Array.isArray(geoJSON.features) || geoJSON.features.length == 0) return undefined
     const areaInfos: AreaInfoItem[] = geoJSON.features.map((p: any) => ({
-        code: p.properties.adcode,
+        adcode: p.properties.adcode,
         name: p.properties.name,
         level: p.properties.level,
         childrenNum: p.properties.childrenNum

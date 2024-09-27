@@ -1,9 +1,3 @@
-export interface AreaItem {
-    code: number;
-    name: string;
-    children?: AreaItem[]
-}
-
 export type LevelValue = "country" | "province" | "city" | "district";
 
 export interface AreaInfoItem {
