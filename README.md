@@ -1,7 +1,7 @@
 # echarts-map
 三级联动，中国地图
 
-离线数据演示地址：
+离线数据演示地址：[echarts中国地图三级联动](https://xiangwenhu.github.io/echarts-map/index.html)
 
 实时数据演示，克隆本项目，然后执行
 *  `npm install` 
