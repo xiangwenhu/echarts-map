@@ -31,7 +31,10 @@ export function getEchartOptions(map: string | number, options: echarts.EChartsO
                 //normal 是图形在默认状态下的样式；
                 borderColor: "rgba(0, 0, 0, 0.2)",
                 //emphasis 是图形在高亮状态下的样式，比如在鼠标悬浮或者图例联动高亮时。
-                emphasis: {
+      
+            },         
+             emphasis: {
+                itemStyle:{
                     areaColor: "#F3B329",
                     shadowOffsetX: 0,
                     shadowOffsetY: 0,
@@ -39,12 +42,12 @@ export function getEchartOptions(map: string | number, options: echarts.EChartsO
                     borderWidth: 0,
                     shadowColor: "rgba(0, 0, 0, 0.5)",
                 },
-            },
+            }
         },
         series: [
             {
                 type: "map",
-                mapType: `${map}`,
+                map: `${map}`,
                 geoIndex: 0,
                 name: "数量",
             },
