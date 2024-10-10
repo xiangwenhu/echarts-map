@@ -8,6 +8,6 @@ export function getGeoJSON(filename: string) {
 
 export function getGeoJSONLocal(filename: string) {
     return get({
-        url: `/data/geo/${filename}`
+        url: `/echarts-map/data/geo/${filename}`
     })
 }

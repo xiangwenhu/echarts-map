@@ -38,7 +38,7 @@ const refCascader = ref<CascaderInstance>();
 }
 
 async function getPCAData() {
-  const res = await get({ url: "/data/pca/pca-code.json" });
+  const res = await get({ url: "/echarts-map/data/pca/pca-code.json" });
   pcaData.value = res.children;
 }
 
