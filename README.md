@@ -7,6 +7,10 @@
 *  `npm install` 
 *   `npm run dev`
 
+## 数据下载
+
+* 省市县数据： `npm run data-pca`
+* 地图geo数据： `npm run data-geo`
 
 ## 项目设置
 
