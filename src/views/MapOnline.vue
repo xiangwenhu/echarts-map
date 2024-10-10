@@ -32,6 +32,7 @@ import ProvinceCityTown from "@/components/PCAOnline.vue";
 import { onBeforeUnmount } from "vue";
 import {  random } from "lodash";
 import { getEchartOptions, getGeoJSONData } from "@/util/map";
+import parkJPG from "@/assets/images/park.jpg"
 
 const adCodeMap: Record<string, AreaInfoItem> = {
   [ADCODE_CHINA]: {
@@ -106,7 +107,7 @@ async function onViewMapArea(areaInfo: AreaInfoItem) {
           },
         ],
         symbolSize: 20,
-        symbol: "image://http://localhost:3001/images/park.jpg", // 这里填写你想要展示的图片的URL
+        symbol: `image://${parkJPG}`, // 这里填写你想要展示的图片的URL
         symbolRotate: 0,
       },
     ];
